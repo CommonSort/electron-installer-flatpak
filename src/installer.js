@@ -12,6 +12,45 @@ var url = require('url')
 
 var pkg = require('../package.json')
 
+var flatpakBundlerManifestKeys = [
+  'app-id',
+  'id',
+  'branch',
+  'base',
+  'baseVersion',
+  'baseFlatpakref',
+  'runtime',
+  'runtimeVersion',
+  'runtimeFlatpakref',
+  'sdk',
+  'sdkFlatpakref',
+  'finishArgs',
+  'command',
+  'files',
+  'symlinks',
+  'extraExports',
+  'modules'
+]
+
+var flatpakBundlerOptionKeys = [
+  'arch',
+  'working-dir',
+  'build-dir',
+  'repo-dir',
+  'manifest-path',
+  'bundle-path',
+  'auto-install-runtime',
+  'auto-install-sdk',
+  'auto-install-base',
+  'clean-tmpdirs',
+  'gpg-sign',
+  'gpg-homedir',
+  'subject',
+  'body',
+  'build-runtime',
+  'extra-flatpak-build-export-args'
+]
+
 var defaultLogger = debug(pkg.name)
 
 var defaultRename = function (dest, src) {
@@ -316,27 +355,20 @@ var createBundle = function (options, dir, callback) {
     [path.join('/lib', options.id, options.bin), path.join('/bin', options.bin)]
   ]
 
-  flatpak.bundle({
-    id: options.id,
-    branch: options.branch,
-    base: options.base,
-    baseVersion: options.baseVersion,
-    baseFlatpakref: options.baseFlatpakref,
-    runtime: options.runtime,
-    runtimeVersion: options.runtimeVersion,
-    runtimeFlatpakref: options.runtimeFlatpakref,
-    sdk: options.sdk,
-    sdkFlatpakref: options.sdkFlatpakref,
-    finishArgs: options.finishArgs,
-    command: options.bin,
-    files: files.concat(options.files),
-    symlinks: symlinks.concat(options.symlinks),
-    extraExports: extraExports,
-    modules: options.modules
-  }, {
-    arch: options.arch,
-    bundlePath: dest
-  }, function (err) {
+  var bundlerManifest = _.pickBy(options, (value, key) => {
+    return flatpakBundlerManifestKeys.includes(key)
+  })
+
+  var bundlerOptions = _.pickBy(options, (value, key) => {
+    return flatpakBundlerOptionKeys.includes(key)
+  })
+
+  bundlerManifest.command = bundlerManifest.command || options.bin
+  bundlerManifest.files = files.concat(bundlerManifest.files)
+  bundlerManifest.symlinks = symlinks.concat(bundlerManifest.symlinks)
+  bundlerOptions.bundlePath = bundlerOptions.bundlePath || dest
+
+  flatpak.bundle(manifestOptions, bundlerOptions, function (err) {
     callback(err, dir)
   })
 }
