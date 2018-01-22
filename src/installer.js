@@ -387,6 +387,8 @@ module.exports = function (data, callback) {
       async.waterfall([
         async.apply(createDir, options),
         async.apply(createContents, options),
+        console.log("sp:electron-installer-flatpak ");
+        console.log(JSON.stringify(options, null, 2));
         async.apply(createBundle, options)
       ], function (err) {
         callback(err, options)
